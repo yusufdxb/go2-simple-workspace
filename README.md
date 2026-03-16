@@ -2,7 +2,8 @@
 
 A lightweight ROS 2 workspace for the **Unitree GO2** that lets you control
 the robot using **voice commands** — spoken naturally, recognized via
-speech recognition, and sent directly to the GO2's motion API.
+Google Speech Recognition with **OpenAI Whisper** as offline fallback,
+and sent directly to the GO2's motion API.
 
 [![ROS2](https://img.shields.io/badge/ROS_2-Humble-blue)](https://docs.ros.org/en/humble/)
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
@@ -13,10 +14,22 @@ speech recognition, and sent directly to the GO2's motion API.
 
 ---
 
+## 📹 Demo
+
+**Whisper has been implemented and more commands are live — see the demo below**
+
+<p align="center">
+  <a href="https://youtu.be/Ac-OsyQlgBo">
+    <img src="https://img.youtube.com/vi/Ac-OsyQlgBo/maxresdefault.jpg" width="640">
+  </a>
+</p>
+
+---
+
 ## What This Does
 
 ```
-Microphone → Speech Recognition → /go2_command → GO2 Command Bridge → Unitree Motion API
+Microphone → Google SR / Whisper → /go2_command → GO2 Command Bridge → Unitree Motion API
 ```
 
 Two ROS 2 nodes work together:
@@ -34,7 +47,13 @@ Two ROS 2 nodes work together:
 |---|---|---|
 | "sit" / "seat" / "set" | Sit down | 1009 |
 | "stand" / "stan" | Stand up | 1010 |
-| "hello" | Hello behavior | — |
+| "jump" | Jump | 1006 |
+| "flip" / "backflip" | Backflip | 1025 |
+| "dance" / "dance one" | Dance 1 | 1022 |
+| "dance two" / "dance again" | Dance 2 | 1023 |
+| "shake" / "shake hands" / "paw" | Shake hands | 1019 |
+| "forward" / "move forward" | Walk forward | 1008 |
+| "hello" / "greet" | Greet behavior | 1016 |
 | "estop" / "emergency" | Emergency stop | 1001 |
 
 ---
@@ -42,22 +61,13 @@ Two ROS 2 nodes work together:
 ## Package Structure
 
 ```
-go2-simple-workspace/
-├── go2_voice_control/
-│   ├── go2_voice_control/
-│   │   ├── __init__.py
-│   │   ├── speech_command_node.py    ← Mic → speech → /go2_command
-│   │   └── go2_command_bridge.py     ← /go2_command → Unitree API
-│   ├── launch/
-│   │   └── voice_control_launch.py
-│   ├── config/
-│   │   └── params.yaml
-│   ├── package.xml
-│   └── setup.py
-├── requirements.txt
-├── .gitignore
-├── LICENSE
-└── README.md
+go2_assist/
+├── speech_command_node.py    ← Mic → Google SR / Whisper → /go2_command
+├── go2_command_bridge.py     ← /go2_command → Unitree API
+├── webrtc_video_node.py      ← WebRTC video stream
+├── setup.py
+├── setup.cfg
+└── package.xml
 ```
 
 ---
@@ -67,6 +77,9 @@ go2-simple-workspace/
 ```bash
 # Python dependencies
 pip install SpeechRecognition pyaudio
+
+# Whisper (for offline fallback)
+pip install openai-whisper torch soundfile
 
 # Clone and build
 mkdir -p ~/go2_ws/src && cd ~/go2_ws/src
@@ -81,38 +94,44 @@ source install/setup.bash
 ## Run
 
 ```bash
-# Both nodes together
-ros2 launch go2_voice_control voice_control_launch.py
+# Speech node
+ros2 run go2_assist speech_command_node
 
-# Or individually
-ros2 run go2_voice_control speech_command_node
-ros2 run go2_voice_control go2_command_bridge
+# Command bridge (separate terminal)
+ros2 run go2_assist go2_command_bridge
 
 # Test without hardware — watch published commands
 ros2 topic echo /go2_command
 
-# Send command manually
+# Send a command manually
 ros2 topic pub /go2_command std_msgs/msg/String "data: 'sit'" --once
+ros2 topic pub /go2_command std_msgs/msg/String "data: 'dance'" --once
 ```
 
 ---
 
-## Configuration
+## How Whisper Works
 
-`config/params.yaml`:
-```yaml
-speech_command_node:
-  ros__parameters:
-    device_index: null      # null = default mic, set 0/1/2 for specific mic
-    energy_threshold: 300
-    pause_threshold: 0.8
+Google Speech Recognition is the primary engine — fast and requires no
+local model. If Google SR fails (bad audio, no internet, or unrecognized
+speech), **Whisper automatically takes over** using a local model running
+entirely on your machine.
+
+```
+Audio captured
+     │
+     ▼
+Google SR ── success ──► publish command
+     │
+   fails
+     │
+     ▼
+Whisper (local) ──────► publish command
 ```
 
-List available microphones:
-```python
-import speech_recognition as sr
-for i, name in enumerate(sr.Microphone.list_microphone_names()):
-    print(f"{i}: {name}")
+Whisper is enabled by default. To disable:
+```bash
+ros2 run go2_assist speech_command_node --ros-args -p use_whisper:=false
 ```
 
 ---
@@ -121,14 +140,13 @@ for i, name in enumerate(sr.Microphone.list_microphone_names()):
 
 In `speech_command_node.py` → `process_command()`:
 ```python
-elif any(word in text for word in ["come", "come here"]):
-    self.publish_command("come_here")
+elif any(w in text for w in ["roll over", "roll"]):
+    self.publish_command("roll")
 ```
 
-In `go2_command_bridge.py` → `command_callback()`:
+In `go2_command_bridge.py` → `API_IDS`:
 ```python
-elif cmd == "come_here":
-    self.send_api(1012)  # replace with correct Unitree API ID
+'roll': 1030,  # replace with correct Unitree API ID
 ```
 
 ---
@@ -139,13 +157,17 @@ elif cmd == "come_here":
 [Microphone]
      │
      ▼
-[speech_command_node]  →  /go2_command (std_msgs/String)
-                                  │
-                                  ▼
-                       [go2_command_bridge]  →  /api/sport/request
-                                                        │
-                                                        ▼
-                                               [GO2 Unitree API]
+[speech_command_node]
+  Google SR → Whisper fallback
+     │
+     │  /go2_command (std_msgs/String)
+     ▼
+[go2_command_bridge]
+  command → Unitree API ID
+     │
+     │  /api/sport/request (unitree_api/Request)
+     ▼
+[GO2 Unitree Motion API]
 ```
 
 ---
