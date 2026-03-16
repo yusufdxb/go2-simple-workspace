@@ -1,0 +1,14 @@
+# ROS 2 build artifacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# OS
+.DS_Store
+Thumbs.db

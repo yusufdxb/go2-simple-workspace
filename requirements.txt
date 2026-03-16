@@ -1,0 +1,10 @@
+# GO2 Simple Workspace — Python Dependencies
+
+# Speech recognition (required)
+SpeechRecognition>=3.10.0
+pyaudio>=0.2.13
+
+# Whisper (optional — only needed if use_whisper:=true)
+# openai-whisper>=20231117
+# torch>=2.0.0
+# soundfile>=0.12.1

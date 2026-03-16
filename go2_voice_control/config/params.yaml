@@ -1,0 +1,17 @@
+speech_command_node:
+  ros__parameters:
+    # Microphone device index
+    # Set to null for system default, or 0/1/2 for a specific mic
+    # To list mics: python3 -c "import speech_recognition as sr; [print(i,n) for i,n in enumerate(sr.Microphone.list_microphone_names())]"
+    device_index: -1
+
+    # Energy threshold — lower = more sensitive to quiet speech
+    energy_threshold: 300
+
+    # Seconds of silence before end of phrase
+    pause_threshold: 0.8
+
+    # Use OpenAI Whisper as fallback when Google SR is unavailable
+    # Requires: pip install openai-whisper torch
+    use_whisper: false
+    whisper_model: "base.en"
