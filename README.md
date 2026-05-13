@@ -117,16 +117,12 @@ local model. If Google SR fails (bad audio, no internet, or unrecognized
 speech), **Whisper automatically takes over** using a local model running
 entirely on your machine.
 
-```
-Audio captured
-     │
-     ▼
-Google SR ── success ──► publish command
-     │
-   fails
-     │
-     ▼
-Whisper (local) ──────► publish command
+```mermaid
+graph TD
+    A[Audio captured] --> B[Google SR]
+    B -->|success| P[publish command]
+    B -->|fails| W[Whisper, local]
+    W --> P
 ```
 
 Whisper is enabled by default. To disable:
@@ -153,21 +149,16 @@ In `go2_command_bridge.py` → `API_IDS`:
 
 ## Node Graph
 
-```
-[Microphone]
-     │
-     ▼
-[speech_command_node]
-  Google SR → Whisper fallback
-     │
-     │  /go2_command (std_msgs/String)
-     ▼
-[go2_command_bridge]
-  command → Unitree API ID
-     │
-     │  /api/sport/request (unitree_api/Request)
-     ▼
-[GO2 Unitree Motion API]
+```mermaid
+graph TD
+    M[Microphone]
+    S[speech_command_node, Google SR then Whisper fallback]
+    B[go2_command_bridge, command to Unitree API ID]
+    API[GO2 Unitree Motion API]
+
+    M --> S
+    S -->|/go2_command, std_msgs/String| B
+    B -->|/api/sport/request, unitree_api/Request| API
 ```
 
 ---
