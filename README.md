@@ -1,7 +1,7 @@
 # GO2 Simple Workspace 🐕🎤
 
 A lightweight ROS 2 workspace for the **Unitree GO2** that lets you control
-the robot using **voice commands** — spoken naturally, recognized via
+the robot using **voice commands**: spoken naturally, recognized via
 Google Speech Recognition with **OpenAI Whisper** as offline fallback,
 and sent directly to the GO2's motion API.
 
@@ -16,7 +16,7 @@ and sent directly to the GO2's motion API.
 
 ## 📹 Demo
 
-**Whisper has been implemented and more commands are live — see the demo below**
+**Whisper has been implemented and more commands are live, see the demo below**
 
 <p align="center">
   <a href="https://youtu.be/Ac-OsyQlgBo">
@@ -100,7 +100,7 @@ ros2 run go2_assist speech_command_node
 # Command bridge (separate terminal)
 ros2 run go2_assist go2_command_bridge
 
-# Test without hardware — watch published commands
+# Test without hardware: watch published commands
 ros2 topic echo /go2_command
 
 # Send a command manually
@@ -112,7 +112,7 @@ ros2 topic pub /go2_command std_msgs/msg/String "data: 'dance'" --once
 
 ## How Whisper Works
 
-Google Speech Recognition is the primary engine — fast and requires no
+Google Speech Recognition is the primary engine, fast and requires no
 local model. If Google SR fails (bad audio, no internet, or unrecognized
 speech), **Whisper automatically takes over** using a local model running
 entirely on your machine.
