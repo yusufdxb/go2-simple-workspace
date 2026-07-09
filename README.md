@@ -1,4 +1,4 @@
-# GO2 Simple Workspace 🐕🎤
+# GO2 Simple Workspace
 
 A lightweight ROS 2 workspace for the **Unitree GO2** that lets you control
 the robot using **voice commands**: spoken naturally, recognized via
@@ -14,7 +14,7 @@ and sent directly to the GO2's motion API.
 
 ---
 
-## 📹 Demo
+## Demo
 
 **Whisper has been implemented and more commands are live, see the demo below**
 
