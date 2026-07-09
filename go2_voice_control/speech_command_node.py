@@ -69,7 +69,7 @@ class SpeechCommandNode(Node):
                 'Install: pip install openai-whisper torch soundfile'
             )
 
-        self.get_logger().info('🎤 Speech Command Node Ready')
+        self.get_logger().info('Speech Command Node ready')
         self.listen_loop()
 
     # ── Main listen loop ──────────────────────────────────────
@@ -161,7 +161,7 @@ class SpeechCommandNode(Node):
         msg = String()
         msg.data = command
         self.publisher.publish(msg)
-        self.get_logger().info(f'📤 Sent command: {command}')
+        self.get_logger().info(f'Sent command: {command}')
 
 
 def main(args=None):
